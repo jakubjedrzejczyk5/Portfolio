@@ -1,0 +1,968 @@
+---
+title: "R_projekt_koncowy"
+output: html_document
+date: "2023-06-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import danych
+
+```{r}
+library(tidyverse)
+library(readr)
+library(hrbrthemes)
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+
+match_info <- read_delim("D:/Gry fabularne/Studia/Projekt końcowy R/matchinfo.csv", #wczytywanie danych
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+#View(match_info)
+
+match_info<-subset(match_info,select = -c(League,Season,Type,blueTeamTag,redTeamTag,blueTop,blueJungle,blueMiddle,blueADC,blueSupport,redTop,redJungle,redMiddle,redADC,redSupport,Address)) #pobieranie potrzebnych danych
+
+sum(is.na(match_info)) #sprawdzanie poprawności danych
+```
+
+```{r}
+Rok_2014<-match_info[match_info$Year==2014,] #dzielenie danych ze względu na rok
+Rok_2015<-match_info[match_info$Year==2015,]
+Rok_2016<-match_info[match_info$Year==2016,]
+Rok_2017<-match_info[match_info$Year==2017,]
+Rok_2018<-match_info[match_info$Year==2018,]
+```
+
+```{r}
+(winrate_blue_top_2014<-aggregate(bResult~blueTopChamp,Rok_2014,mean)) #winrate na odpowiednich liniach, z uwzględnieniem strony
+(winrate_red_top_2014<-aggregate(rResult~redTopChamp,Rok_2014,mean))
+colnames(winrate_blue_top_2014)<-c("Champ","bResult")
+colnames(winrate_red_top_2014)<-c("Champ","rResult")
+
+(winrate_blue_jungle_2014<-aggregate(bResult~blueJungleChamp,Rok_2014,mean))
+(winrate_red_jungle_2014<-aggregate(rResult~redJungleChamp,Rok_2014,mean))
+colnames(winrate_blue_jungle_2014)<-c("Champ","bResult")
+colnames(winrate_red_jungle_2014)<-c("Champ","rResult")
+
+(winrate_blue_mid_2014<-aggregate(bResult~blueMiddleChamp,Rok_2014,mean))
+(winrate_red_mid_2014<-aggregate(rResult~redMiddleChamp,Rok_2014,mean))
+colnames(winrate_blue_mid_2014)<-c("Champ","bResult")
+colnames(winrate_red_mid_2014)<-c("Champ","rResult")
+
+(winrate_blue_adc_2014<-aggregate(bResult~blueADCChamp,Rok_2014,mean))
+(winrate_red_adc_2014<-aggregate(rResult~redADCChamp,Rok_2014,mean))
+colnames(winrate_blue_adc_2014)<-c("Champ","bResult")
+colnames(winrate_red_adc_2014)<-c("Champ","rResult")
+
+(winrate_blue_support_2014<-aggregate(bResult~blueSupportChamp,Rok_2014,mean))
+(winrate_red_support_2014<-aggregate(rResult~redSupportChamp,Rok_2014,mean))
+colnames(winrate_blue_support_2014)<-c("Champ","bResult")
+colnames(winrate_red_support_2014)<-c("Champ","rResult")
+
+
+(x1<-(subset(Rok_2014, select=c(bResult,blueTopChamp)))) #wyciągniecie danych i sklejenie ich jedna pod drugą, by uzyskać winrate bez uwzględnienia strony 
+colnames(x1)<-c("Result","Champ")
+y1<-(subset(Rok_2014, select=c(rResult,redTopChamp)))
+colnames(y1)<-c("Result","Champ")
+winrate_top_2014_podstawowy<-rbind(x1,y1)
+winrate_top_2014<-aggregate(Result~Champ,winrate_top_2014_podstawowy,mean)
+
+x2<-(subset(Rok_2014, select=c(bResult,blueJungleChamp)))
+colnames(x2)<-c("Result","Champ")
+y2<-(subset(Rok_2014, select=c(rResult,redJungleChamp)))
+colnames(y2)<-c("Result","Champ")
+winrate_jungle_2014_podstawowy<-rbind(x2,y2)
+winrate_jungle_2014<-aggregate(Result~Champ,winrate_jungle_2014_podstawowy,mean)
+
+x3<-(subset(Rok_2014, select=c(bResult,blueMiddleChamp)))
+colnames(x3)<-c("Result","Champ")
+y3<-(subset(Rok_2014, select=c(rResult,redMiddleChamp)))
+colnames(y3)<-c("Result","Champ")
+winrate_mid_2014_podstawowy<-rbind(x3,y3)
+winrate_mid_2014<-aggregate(Result~Champ,winrate_mid_2014_podstawowy,mean)
+
+x4<-(subset(Rok_2014, select=c(bResult,blueADCChamp)))
+colnames(x4)<-c("Result","Champ")
+y4<-(subset(Rok_2014, select=c(rResult,redADCChamp)))
+colnames(y4)<-c("Result","Champ")
+winrate_adc_2014_podstawowy<-rbind(x4,y4)
+winrate_adc_2014<-aggregate(Result~Champ,winrate_adc_2014_podstawowy,mean)
+
+x5<-(subset(Rok_2014, select=c(bResult,blueSupportChamp)))
+colnames(x5)<-c("Result","Champ")
+y5<-(subset(Rok_2014, select=c(rResult,redSupportChamp)))
+colnames(y5)<-c("Result","Champ")
+winrate_support_2014_podstawowy<-rbind(x5,y5)
+winrate_support_2014<-aggregate(Result~Champ,winrate_support_2014_podstawowy,mean)
+
+
+pickrate_top_2014_podstawowy<-winrate_top_2014_podstawowy 
+pickrate_jungle_2014_podstawowy<-winrate_jungle_2014_podstawowy
+pickrate_mid_2014_podstawowy<-winrate_mid_2014_podstawowy
+pickrate_adc_2014_podstawowy<-winrate_adc_2014_podstawowy
+pickrate_support_2014_podstawowy<-winrate_support_2014_podstawowy
+
+pickrate_top_2014_podstawowy$Result<-1
+pickrate_jungle_2014_podstawowy$Result<-1
+pickrate_mid_2014_podstawowy$Result<-1
+pickrate_adc_2014_podstawowy$Result<-1
+pickrate_support_2014_podstawowy$Result<-1
+
+(pickrate_top_2014<-aggregate(Result~Champ,pickrate_top_2014_podstawowy,sum)) #sprawdzenie ile razy dana postać była wybrana
+(pickrate_top_2014$Result<-as.numeric(as.character(pickrate_top_2014$Result))/nrow(Rok_2014)) #podzielenie przez liczbę gier w tym sezonie - pickrate
+colnames(pickrate_top_2014)<-c("Champ","Pickrate")
+
+(pickrate_jungle_2014<-aggregate(Result~Champ,pickrate_jungle_2014_podstawowy,sum))
+(pickrate_jungle_2014$Result<-as.numeric(as.character(pickrate_jungle_2014$Result))/nrow(Rok_2014))
+colnames(pickrate_jungle_2014)<-c("Champ","Pickrate")
+
+(pickrate_mid_2014<-aggregate(Result~Champ,pickrate_mid_2014_podstawowy,sum))
+(pickrate_mid_2014$Result<-as.numeric(as.character(pickrate_mid_2014$Result))/nrow(Rok_2014))
+colnames(pickrate_mid_2014)<-c("Champ","Pickrate")
+
+(pickrate_adc_2014<-aggregate(Result~Champ,pickrate_adc_2014_podstawowy,sum))
+(pickrate_adc_2014$Result<-as.numeric(as.character(pickrate_adc_2014$Result))/nrow(Rok_2014))
+colnames(pickrate_adc_2014)<-c("Champ","Pickrate")
+
+(pickrate_support_2014<-aggregate(Result~Champ,pickrate_support_2014_podstawowy,sum))
+(pickrate_support_2014$Result<-as.numeric(as.character(pickrate_support_2014$Result))/nrow(Rok_2014))
+colnames(pickrate_support_2014)<-c("Champ","Pickrate")
+
+#tworzenie dataframe zawierającego winrate, winrate blue side, winrate red side i pickrate, w następnych wersjach ustawiono limit do 15 postaci z największym pickratem
+
+winrate_top_2014_caly <- merge(x = winrate_top_2014, y = winrate_red_top_2014, by = "Champ", all = TRUE)
+winrate_top_2014_caly <- merge(x = winrate_top_2014_caly, y = winrate_blue_top_2014, by = "Champ", all = TRUE)
+winrate_top_2014_caly <- merge(x = winrate_top_2014_caly, y = pickrate_top_2014, by = "Champ", all = TRUE) #łączenie w jeden datset
+
+winrate_top_2014_caly$Champ <- factor(winrate_top_2014_caly$Champ, levels = winrate_top_2014_caly$Champ[order(desc(winrate_top_2014_caly$Pickrate))])
+winrate_top_2014_caly_long <- tidyr::pivot_longer(winrate_top_2014_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value") #preparacja przed wizualizacją
+
+winrate_jungle_2014_caly <- merge(x = winrate_jungle_2014, y = winrate_red_jungle_2014, by = "Champ", all = TRUE)
+winrate_jungle_2014_caly <- merge(x = winrate_jungle_2014_caly, y = winrate_blue_jungle_2014, by = "Champ", all = TRUE)
+winrate_jungle_2014_caly <- merge(x = winrate_jungle_2014_caly, y = pickrate_jungle_2014, by = "Champ", all = TRUE)
+
+winrate_jungle_2014_caly$Champ <- factor(winrate_jungle_2014_caly$Champ, levels = winrate_jungle_2014_caly$Champ[order(desc(winrate_jungle_2014_caly$Pickrate))])
+winrate_jungle_2014_caly_long <- tidyr::pivot_longer(winrate_jungle_2014_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_mid_2014_caly <- merge(x = winrate_mid_2014, y = winrate_red_mid_2014, by = "Champ", all = TRUE)
+winrate_mid_2014_caly <- merge(x = winrate_mid_2014_caly, y = winrate_blue_mid_2014, by = "Champ", all = TRUE)
+winrate_mid_2014_caly <- merge(x = winrate_mid_2014_caly, y = pickrate_mid_2014, by = "Champ", all = TRUE)
+
+winrate_mid_2014_caly$Champ <- factor(winrate_mid_2014_caly$Champ, levels = winrate_mid_2014_caly$Champ[order(desc(winrate_mid_2014_caly$Pickrate))])
+winrate_mid_2014_caly_long <- tidyr::pivot_longer(winrate_mid_2014_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_adc_2014_caly <- merge(x = winrate_adc_2014, y = winrate_red_adc_2014, by = "Champ", all = TRUE)
+winrate_adc_2014_caly <- merge(x = winrate_adc_2014_caly, y = winrate_blue_adc_2014, by = "Champ", all = TRUE)
+winrate_adc_2014_caly <- merge(x = winrate_adc_2014_caly, y = pickrate_adc_2014, by = "Champ", all = TRUE)
+
+winrate_adc_2014_caly$Champ <- factor(winrate_adc_2014_caly$Champ, levels = winrate_adc_2014_caly$Champ[order(desc(winrate_adc_2014_caly$Pickrate))])
+winrate_adc_2014_caly_long <- tidyr::pivot_longer(winrate_adc_2014_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_support_2014_caly <- merge(x = winrate_support_2014, y = winrate_red_support_2014, by = "Champ", all = TRUE)
+winrate_support_2014_caly <- merge(x = winrate_support_2014_caly, y = winrate_blue_support_2014, by = "Champ", all = TRUE)
+winrate_support_2014_caly <- merge(x = winrate_support_2014_caly, y = pickrate_support_2014, by = "Champ", all = TRUE)
+
+winrate_support_2014_caly$Champ <- factor(winrate_support_2014_caly$Champ, levels = winrate_support_2014_caly$Champ[order(desc(winrate_support_2014_caly$Pickrate))])
+winrate_support_2014_caly_long <- tidyr::pivot_longer(winrate_support_2014_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+```
+
+```{r fig.align="center", echo = FALSE,fig.width = 20}
+# wizualizacja danych
+
+plot_top_2014<-ggplot(winrate_top_2014_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_top_2014_caly$Pickrate[match(x, winrate_top_2014_caly$Champ)]*100, 2), ")"))
+ggsave("plot_top_2014.png", plot = plot_top_2014, width = 25, height = 10, dpi = 300)
+
+plot_jungle_2014<-ggplot(winrate_jungle_2014_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_jungle_2014_caly$Pickrate[match(x, winrate_jungle_2014_caly$Champ)]*100, 2), ")"))
+ggsave("plot_jungle_2014.png", plot = plot_jungle_2014, width = 25, height = 10, dpi = 300)
+
+plot_mid_2014<-ggplot(winrate_mid_2014_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_mid_2014_caly$Pickrate[match(x, winrate_mid_2014_caly$Champ)]*100, 2), ")"))
+ggsave("plot_mid_2014.png", plot = plot_mid_2014, width = 25, height = 10, dpi = 300)
+
+plot_adc_2014<-ggplot(winrate_adc_2014_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_adc_2014_caly$Pickrate[match(x, winrate_adc_2014_caly$Champ)]*100, 2), ")"))
+ggsave("plot_adc_2014.png", plot = plot_adc_2014, width = 25, height = 10, dpi = 300)
+
+plot_support_2014<-ggplot(winrate_support_2014_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_support_2014_caly$Pickrate[match(x, winrate_support_2014_caly$Champ)]*100, 2), ")"))
+ggsave("plot_support_2014.png", plot = plot_support_2014, width = 25, height = 10, dpi = 300)
+```
+
+## To samo tylko dla kolejnych lat
+
+```{r}
+(winrate_blue_top_2015<-aggregate(bResult~blueTopChamp,Rok_2015,mean)) #winrate na odpowiednich liniach, z uwzględnieniem strony
+(winrate_red_top_2015<-aggregate(rResult~redTopChamp,Rok_2015,mean))
+colnames(winrate_blue_top_2015)<-c("Champ","bResult")
+colnames(winrate_red_top_2015)<-c("Champ","rResult")
+
+(winrate_blue_jungle_2015<-aggregate(bResult~blueJungleChamp,Rok_2015,mean))
+(winrate_red_jungle_2015<-aggregate(rResult~redJungleChamp,Rok_2015,mean))
+colnames(winrate_blue_jungle_2015)<-c("Champ","bResult")
+colnames(winrate_red_jungle_2015)<-c("Champ","rResult")
+
+(winrate_blue_mid_2015<-aggregate(bResult~blueMiddleChamp,Rok_2015,mean))
+(winrate_red_mid_2015<-aggregate(rResult~redMiddleChamp,Rok_2015,mean))
+colnames(winrate_blue_mid_2015)<-c("Champ","bResult")
+colnames(winrate_red_mid_2015)<-c("Champ","rResult")
+
+(winrate_blue_adc_2015<-aggregate(bResult~blueADCChamp,Rok_2015,mean))
+(winrate_red_adc_2015<-aggregate(rResult~redADCChamp,Rok_2015,mean))
+colnames(winrate_blue_adc_2015)<-c("Champ","bResult")
+colnames(winrate_red_adc_2015)<-c("Champ","rResult")
+
+(winrate_blue_support_2015<-aggregate(bResult~blueSupportChamp,Rok_2015,mean))
+(winrate_red_support_2015<-aggregate(rResult~redSupportChamp,Rok_2015,mean))
+colnames(winrate_blue_support_2015)<-c("Champ","bResult")
+colnames(winrate_red_support_2015)<-c("Champ","rResult")
+
+
+(x1<-(subset(Rok_2015, select=c(bResult,blueTopChamp)))) #wyciągniecie danych i sklejenie ich jedna pod drugą, by uzyskać winrate bez uwzględnienia strony 
+colnames(x1)<-c("Result","Champ")
+y1<-(subset(Rok_2015, select=c(rResult,redTopChamp)))
+colnames(y1)<-c("Result","Champ")
+winrate_top_2015_podstawowy<-rbind(x1,y1)
+winrate_top_2015<-aggregate(Result~Champ,winrate_top_2015_podstawowy,mean)
+
+x2<-(subset(Rok_2015, select=c(bResult,blueJungleChamp)))
+colnames(x2)<-c("Result","Champ")
+y2<-(subset(Rok_2015, select=c(rResult,redJungleChamp)))
+colnames(y2)<-c("Result","Champ")
+winrate_jungle_2015_podstawowy<-rbind(x2,y2)
+winrate_jungle_2015<-aggregate(Result~Champ,winrate_jungle_2015_podstawowy,mean)
+
+x3<-(subset(Rok_2015, select=c(bResult,blueMiddleChamp)))
+colnames(x3)<-c("Result","Champ")
+y3<-(subset(Rok_2015, select=c(rResult,redMiddleChamp)))
+colnames(y3)<-c("Result","Champ")
+winrate_mid_2015_podstawowy<-rbind(x3,y3)
+winrate_mid_2015<-aggregate(Result~Champ,winrate_mid_2015_podstawowy,mean)
+
+x4<-(subset(Rok_2015, select=c(bResult,blueADCChamp)))
+colnames(x4)<-c("Result","Champ")
+y4<-(subset(Rok_2015, select=c(rResult,redADCChamp)))
+colnames(y4)<-c("Result","Champ")
+winrate_adc_2015_podstawowy<-rbind(x4,y4)
+winrate_adc_2015<-aggregate(Result~Champ,winrate_adc_2015_podstawowy,mean)
+
+x5<-(subset(Rok_2015, select=c(bResult,blueSupportChamp)))
+colnames(x5)<-c("Result","Champ")
+y5<-(subset(Rok_2015, select=c(rResult,redSupportChamp)))
+colnames(y5)<-c("Result","Champ")
+winrate_support_2015_podstawowy<-rbind(x5,y5)
+winrate_support_2015<-aggregate(Result~Champ,winrate_support_2015_podstawowy,mean)
+
+
+pickrate_top_2015_podstawowy<-winrate_top_2015_podstawowy 
+pickrate_jungle_2015_podstawowy<-winrate_jungle_2015_podstawowy
+pickrate_mid_2015_podstawowy<-winrate_mid_2015_podstawowy
+pickrate_adc_2015_podstawowy<-winrate_adc_2015_podstawowy
+pickrate_support_2015_podstawowy<-winrate_support_2015_podstawowy
+
+pickrate_top_2015_podstawowy$Result<-1
+pickrate_jungle_2015_podstawowy$Result<-1
+pickrate_mid_2015_podstawowy$Result<-1
+pickrate_adc_2015_podstawowy$Result<-1
+pickrate_support_2015_podstawowy$Result<-1
+
+(pickrate_top_2015<-aggregate(Result~Champ,pickrate_top_2015_podstawowy,sum)) #sprawdzenie ile razy dana postać była wybrana
+(pickrate_top_2015$Result<-as.numeric(as.character(pickrate_top_2015$Result))/nrow(Rok_2015)) #podzielenie przez liczbę gier w tym sezonie - pickrate
+colnames(pickrate_top_2015)<-c("Champ","Pickrate")
+
+(pickrate_jungle_2015<-aggregate(Result~Champ,pickrate_jungle_2015_podstawowy,sum))
+(pickrate_jungle_2015$Result<-as.numeric(as.character(pickrate_jungle_2015$Result))/nrow(Rok_2015))
+colnames(pickrate_jungle_2015)<-c("Champ","Pickrate")
+
+(pickrate_mid_2015<-aggregate(Result~Champ,pickrate_mid_2015_podstawowy,sum))
+(pickrate_mid_2015$Result<-as.numeric(as.character(pickrate_mid_2015$Result))/nrow(Rok_2015))
+colnames(pickrate_mid_2015)<-c("Champ","Pickrate")
+
+(pickrate_adc_2015<-aggregate(Result~Champ,pickrate_adc_2015_podstawowy,sum))
+(pickrate_adc_2015$Result<-as.numeric(as.character(pickrate_adc_2015$Result))/nrow(Rok_2015))
+colnames(pickrate_adc_2015)<-c("Champ","Pickrate")
+
+(pickrate_support_2015<-aggregate(Result~Champ,pickrate_support_2015_podstawowy,sum))
+(pickrate_support_2015$Result<-as.numeric(as.character(pickrate_support_2015$Result))/nrow(Rok_2015))
+colnames(pickrate_support_2015)<-c("Champ","Pickrate")
+
+
+winrate_top_2015_caly <- merge(x = winrate_top_2015, y = winrate_red_top_2015, by = "Champ", all = TRUE)
+winrate_top_2015_caly <- merge(x = winrate_top_2015_caly, y = winrate_blue_top_2015, by = "Champ", all = TRUE)
+winrate_top_2015_caly <- merge(x = winrate_top_2015_caly, y = pickrate_top_2015, by = "Champ", all = TRUE)
+
+winrate_top_2015_caly$Champ <- factor(winrate_top_2015_caly$Champ, levels = winrate_top_2015_caly$Champ[order(desc(winrate_top_2015_caly$Pickrate))])
+winrate_top_2015_caly <- winrate_top_2015_caly %>%
+  top_n(15, Pickrate)
+winrate_top_2015_caly_long <- tidyr::pivot_longer(winrate_top_2015_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_jungle_2015_caly <- merge(x = winrate_jungle_2015, y = winrate_red_jungle_2015, by = "Champ", all = TRUE)
+winrate_jungle_2015_caly <- merge(x = winrate_jungle_2015_caly, y = winrate_blue_jungle_2015, by = "Champ", all = TRUE)
+winrate_jungle_2015_caly <- merge(x = winrate_jungle_2015_caly, y = pickrate_jungle_2015, by = "Champ", all = TRUE)
+
+winrate_jungle_2015_caly$Champ <- factor(winrate_jungle_2015_caly$Champ, levels = winrate_jungle_2015_caly$Champ[order(desc(winrate_jungle_2015_caly$Pickrate))])
+winrate_jungle_2015_caly <- winrate_jungle_2015_caly %>%
+  top_n(15, Pickrate)
+winrate_jungle_2015_caly_long <- tidyr::pivot_longer(winrate_jungle_2015_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_mid_2015_caly <- merge(x = winrate_mid_2015, y = winrate_red_mid_2015, by = "Champ", all = TRUE)
+winrate_mid_2015_caly <- merge(x = winrate_mid_2015_caly, y = winrate_blue_mid_2015, by = "Champ", all = TRUE)
+winrate_mid_2015_caly <- merge(x = winrate_mid_2015_caly, y = pickrate_mid_2015, by = "Champ", all = TRUE)
+
+winrate_mid_2015_caly$Champ <- factor(winrate_mid_2015_caly$Champ, levels = winrate_mid_2015_caly$Champ[order(desc(winrate_mid_2015_caly$Pickrate))])
+winrate_mid_2015_caly <- winrate_mid_2015_caly %>%
+  top_n(15, Pickrate)
+winrate_mid_2015_caly_long <- tidyr::pivot_longer(winrate_mid_2015_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_adc_2015_caly <- merge(x = winrate_adc_2015, y = winrate_red_adc_2015, by = "Champ", all = TRUE)
+winrate_adc_2015_caly <- merge(x = winrate_adc_2015_caly, y = winrate_blue_adc_2015, by = "Champ", all = TRUE)
+winrate_adc_2015_caly <- merge(x = winrate_adc_2015_caly, y = pickrate_adc_2015, by = "Champ", all = TRUE)
+
+winrate_adc_2015_caly$Champ <- factor(winrate_adc_2015_caly$Champ, levels = winrate_adc_2015_caly$Champ[order(desc(winrate_adc_2015_caly$Pickrate))])
+winrate_adc_2015_caly <- winrate_adc_2015_caly %>%
+  top_n(15, Pickrate)
+winrate_adc_2015_caly_long <- tidyr::pivot_longer(winrate_adc_2015_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_support_2015_caly <- merge(x = winrate_support_2015, y = winrate_red_support_2015, by = "Champ", all = TRUE)
+winrate_support_2015_caly <- merge(x = winrate_support_2015_caly, y = winrate_blue_support_2015, by = "Champ", all = TRUE)
+winrate_support_2015_caly <- merge(x = winrate_support_2015_caly, y = pickrate_support_2015, by = "Champ", all = TRUE)
+
+winrate_support_2015_caly$Champ <- factor(winrate_support_2015_caly$Champ, levels = winrate_support_2015_caly$Champ[order(desc(winrate_support_2015_caly$Pickrate))])
+winrate_support_2015_caly <- winrate_support_2015_caly %>%
+  top_n(15, Pickrate)
+winrate_support_2015_caly_long <- tidyr::pivot_longer(winrate_support_2015_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+```
+
+```{r fig.align="center", echo = FALSE,fig.width = 20}
+plot_top_2015<-ggplot(winrate_top_2015_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_top_2015_caly$Pickrate[match(x, winrate_top_2015_caly$Champ)]*100, 2), ")"))
+ggsave("plot_top_2015.png", plot = plot_top_2015, width = 25, height = 10, dpi = 300)
+
+plot_jungle_2015<-ggplot(winrate_jungle_2015_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_jungle_2015_caly$Pickrate[match(x, winrate_jungle_2015_caly$Champ)]*100, 2), ")"))
+ggsave("plot_jungle_2015.png", plot = plot_jungle_2015, width = 25, height = 10, dpi = 300)
+
+plot_mid_2015<-ggplot(winrate_mid_2015_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_mid_2015_caly$Pickrate[match(x, winrate_mid_2015_caly$Champ)]*100, 2), ")"))
+ggsave("plot_mid_2015.png", plot = plot_mid_2015, width = 25, height = 10, dpi = 300)
+
+plot_adc_2015<-ggplot(winrate_adc_2015_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_adc_2015_caly$Pickrate[match(x, winrate_adc_2015_caly$Champ)]*100, 2), ")"))
+ggsave("plot_adc_2015.png", plot = plot_adc_2015, width = 25, height = 10, dpi = 300)
+
+plot_support_2015<-ggplot(winrate_support_2015_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_support_2015_caly$Pickrate[match(x, winrate_support_2015_caly$Champ)]*100, 2), ")"))
+ggsave("plot_support_2015.png", plot = plot_support_2015, width = 25, height = 10, dpi = 300)
+```
+
+
+
+
+
+```{r}
+(winrate_blue_top_2016<-aggregate(bResult~blueTopChamp,Rok_2016,mean)) #winrate na odpowiednich liniach, z uwzględnieniem strony
+(winrate_red_top_2016<-aggregate(rResult~redTopChamp,Rok_2016,mean))
+colnames(winrate_blue_top_2016)<-c("Champ","bResult")
+colnames(winrate_red_top_2016)<-c("Champ","rResult")
+
+(winrate_blue_jungle_2016<-aggregate(bResult~blueJungleChamp,Rok_2016,mean))
+(winrate_red_jungle_2016<-aggregate(rResult~redJungleChamp,Rok_2016,mean))
+colnames(winrate_blue_jungle_2016)<-c("Champ","bResult")
+colnames(winrate_red_jungle_2016)<-c("Champ","rResult")
+
+(winrate_blue_mid_2016<-aggregate(bResult~blueMiddleChamp,Rok_2016,mean))
+(winrate_red_mid_2016<-aggregate(rResult~redMiddleChamp,Rok_2016,mean))
+colnames(winrate_blue_mid_2016)<-c("Champ","bResult")
+colnames(winrate_red_mid_2016)<-c("Champ","rResult")
+
+(winrate_blue_adc_2016<-aggregate(bResult~blueADCChamp,Rok_2016,mean))
+(winrate_red_adc_2016<-aggregate(rResult~redADCChamp,Rok_2016,mean))
+colnames(winrate_blue_adc_2016)<-c("Champ","bResult")
+colnames(winrate_red_adc_2016)<-c("Champ","rResult")
+
+(winrate_blue_support_2016<-aggregate(bResult~blueSupportChamp,Rok_2016,mean))
+(winrate_red_support_2016<-aggregate(rResult~redSupportChamp,Rok_2016,mean))
+colnames(winrate_blue_support_2016)<-c("Champ","bResult")
+colnames(winrate_red_support_2016)<-c("Champ","rResult")
+
+
+(x1<-(subset(Rok_2016, select=c(bResult,blueTopChamp)))) #wyciągniecie danych i sklejenie ich jedna pod drugą, by uzyskać winrate bez uwzględnienia strony 
+colnames(x1)<-c("Result","Champ")
+y1<-(subset(Rok_2016, select=c(rResult,redTopChamp)))
+colnames(y1)<-c("Result","Champ")
+winrate_top_2016_podstawowy<-rbind(x1,y1)
+winrate_top_2016<-aggregate(Result~Champ,winrate_top_2016_podstawowy,mean)
+
+x2<-(subset(Rok_2016, select=c(bResult,blueJungleChamp)))
+colnames(x2)<-c("Result","Champ")
+y2<-(subset(Rok_2016, select=c(rResult,redJungleChamp)))
+colnames(y2)<-c("Result","Champ")
+winrate_jungle_2016_podstawowy<-rbind(x2,y2)
+winrate_jungle_2016<-aggregate(Result~Champ,winrate_jungle_2016_podstawowy,mean)
+
+x3<-(subset(Rok_2016, select=c(bResult,blueMiddleChamp)))
+colnames(x3)<-c("Result","Champ")
+y3<-(subset(Rok_2016, select=c(rResult,redMiddleChamp)))
+colnames(y3)<-c("Result","Champ")
+winrate_mid_2016_podstawowy<-rbind(x3,y3)
+winrate_mid_2016<-aggregate(Result~Champ,winrate_mid_2016_podstawowy,mean)
+
+x4<-(subset(Rok_2016, select=c(bResult,blueADCChamp)))
+colnames(x4)<-c("Result","Champ")
+y4<-(subset(Rok_2016, select=c(rResult,redADCChamp)))
+colnames(y4)<-c("Result","Champ")
+winrate_adc_2016_podstawowy<-rbind(x4,y4)
+winrate_adc_2016<-aggregate(Result~Champ,winrate_adc_2016_podstawowy,mean)
+
+x5<-(subset(Rok_2016, select=c(bResult,blueSupportChamp)))
+colnames(x5)<-c("Result","Champ")
+y5<-(subset(Rok_2016, select=c(rResult,redSupportChamp)))
+colnames(y5)<-c("Result","Champ")
+winrate_support_2016_podstawowy<-rbind(x5,y5)
+winrate_support_2016<-aggregate(Result~Champ,winrate_support_2016_podstawowy,mean)
+
+
+pickrate_top_2016_podstawowy<-winrate_top_2016_podstawowy 
+pickrate_jungle_2016_podstawowy<-winrate_jungle_2016_podstawowy
+pickrate_mid_2016_podstawowy<-winrate_mid_2016_podstawowy
+pickrate_adc_2016_podstawowy<-winrate_adc_2016_podstawowy
+pickrate_support_2016_podstawowy<-winrate_support_2016_podstawowy
+
+pickrate_top_2016_podstawowy$Result<-1
+pickrate_jungle_2016_podstawowy$Result<-1
+pickrate_mid_2016_podstawowy$Result<-1
+pickrate_adc_2016_podstawowy$Result<-1
+pickrate_support_2016_podstawowy$Result<-1
+
+(pickrate_top_2016<-aggregate(Result~Champ,pickrate_top_2016_podstawowy,sum)) #sprawdzenie ile razy dana postać była wybrana
+(pickrate_top_2016$Result<-as.numeric(as.character(pickrate_top_2016$Result))/nrow(Rok_2016)) #podzielenie przez liczbę gier w tym sezonie - pickrate
+colnames(pickrate_top_2016)<-c("Champ","Pickrate")
+
+(pickrate_jungle_2016<-aggregate(Result~Champ,pickrate_jungle_2016_podstawowy,sum))
+(pickrate_jungle_2016$Result<-as.numeric(as.character(pickrate_jungle_2016$Result))/nrow(Rok_2016))
+colnames(pickrate_jungle_2016)<-c("Champ","Pickrate")
+
+(pickrate_mid_2016<-aggregate(Result~Champ,pickrate_mid_2016_podstawowy,sum))
+(pickrate_mid_2016$Result<-as.numeric(as.character(pickrate_mid_2016$Result))/nrow(Rok_2016))
+colnames(pickrate_mid_2016)<-c("Champ","Pickrate")
+
+(pickrate_adc_2016<-aggregate(Result~Champ,pickrate_adc_2016_podstawowy,sum))
+(pickrate_adc_2016$Result<-as.numeric(as.character(pickrate_adc_2016$Result))/nrow(Rok_2016))
+colnames(pickrate_adc_2016)<-c("Champ","Pickrate")
+
+(pickrate_support_2016<-aggregate(Result~Champ,pickrate_support_2016_podstawowy,sum))
+(pickrate_support_2016$Result<-as.numeric(as.character(pickrate_support_2016$Result))/nrow(Rok_2016))
+colnames(pickrate_support_2016)<-c("Champ","Pickrate")
+
+
+winrate_top_2016_caly <- merge(x = winrate_top_2016, y = winrate_red_top_2016, by = "Champ", all = TRUE)
+winrate_top_2016_caly <- merge(x = winrate_top_2016_caly, y = winrate_blue_top_2016, by = "Champ", all = TRUE)
+winrate_top_2016_caly <- merge(x = winrate_top_2016_caly, y = pickrate_top_2016, by = "Champ", all = TRUE)
+
+winrate_top_2016_caly$Champ <- factor(winrate_top_2016_caly$Champ, levels = winrate_top_2016_caly$Champ[order(desc(winrate_top_2016_caly$Pickrate))])
+winrate_top_2016_caly <- winrate_top_2016_caly %>%
+  top_n(15, Pickrate)
+winrate_top_2016_caly_long <- tidyr::pivot_longer(winrate_top_2016_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_jungle_2016_caly <- merge(x = winrate_jungle_2016, y = winrate_red_jungle_2016, by = "Champ", all = TRUE)
+winrate_jungle_2016_caly <- merge(x = winrate_jungle_2016_caly, y = winrate_blue_jungle_2016, by = "Champ", all = TRUE)
+winrate_jungle_2016_caly <- merge(x = winrate_jungle_2016_caly, y = pickrate_jungle_2016, by = "Champ", all = TRUE)
+
+winrate_jungle_2016_caly$Champ <- factor(winrate_jungle_2016_caly$Champ, levels = winrate_jungle_2016_caly$Champ[order(desc(winrate_jungle_2016_caly$Pickrate))])
+winrate_jungle_2016_caly <- winrate_jungle_2016_caly %>%
+  top_n(15, Pickrate)
+winrate_jungle_2016_caly_long <- tidyr::pivot_longer(winrate_jungle_2016_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_mid_2016_caly <- merge(x = winrate_mid_2016, y = winrate_red_mid_2016, by = "Champ", all = TRUE)
+winrate_mid_2016_caly <- merge(x = winrate_mid_2016_caly, y = winrate_blue_mid_2016, by = "Champ", all = TRUE)
+winrate_mid_2016_caly <- merge(x = winrate_mid_2016_caly, y = pickrate_mid_2016, by = "Champ", all = TRUE)
+
+winrate_mid_2016_caly$Champ <- factor(winrate_mid_2016_caly$Champ, levels = winrate_mid_2016_caly$Champ[order(desc(winrate_mid_2016_caly$Pickrate))])
+winrate_mid_2016_caly <- winrate_mid_2016_caly %>%
+  top_n(15, Pickrate)
+winrate_mid_2016_caly_long <- tidyr::pivot_longer(winrate_mid_2016_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_adc_2016_caly <- merge(x = winrate_adc_2016, y = winrate_red_adc_2016, by = "Champ", all = TRUE)
+winrate_adc_2016_caly <- merge(x = winrate_adc_2016_caly, y = winrate_blue_adc_2016, by = "Champ", all = TRUE)
+winrate_adc_2016_caly <- merge(x = winrate_adc_2016_caly, y = pickrate_adc_2016, by = "Champ", all = TRUE)
+
+winrate_adc_2016_caly$Champ <- factor(winrate_adc_2016_caly$Champ, levels = winrate_adc_2016_caly$Champ[order(desc(winrate_adc_2016_caly$Pickrate))])
+winrate_adc_2016_caly <- winrate_adc_2016_caly %>%
+  top_n(15, Pickrate)
+winrate_adc_2016_caly_long <- tidyr::pivot_longer(winrate_adc_2016_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_support_2016_caly <- merge(x = winrate_support_2016, y = winrate_red_support_2016, by = "Champ", all = TRUE)
+winrate_support_2016_caly <- merge(x = winrate_support_2016_caly, y = winrate_blue_support_2016, by = "Champ", all = TRUE)
+winrate_support_2016_caly <- merge(x = winrate_support_2016_caly, y = pickrate_support_2016, by = "Champ", all = TRUE)
+
+winrate_support_2016_caly$Champ <- factor(winrate_support_2016_caly$Champ, levels = winrate_support_2016_caly$Champ[order(desc(winrate_support_2016_caly$Pickrate))])
+winrate_support_2016_caly <- winrate_support_2016_caly %>%
+  top_n(15, Pickrate)
+winrate_support_2016_caly_long <- tidyr::pivot_longer(winrate_support_2016_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+```
+
+```{r fig.align="center", echo = FALSE,fig.width = 20}
+plot_top_2016<-ggplot(winrate_top_2016_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_top_2016_caly$Pickrate[match(x, winrate_top_2016_caly$Champ)]*100, 2), ")"))
+ggsave("plot_top_2016.png", plot = plot_top_2016, width = 25, height = 10, dpi = 300)
+
+plot_jungle_2016<-ggplot(winrate_jungle_2016_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_jungle_2016_caly$Pickrate[match(x, winrate_jungle_2016_caly$Champ)]*100, 2), ")"))
+ggsave("plot_jungle_2016.png", plot = plot_jungle_2016, width = 25, height = 10, dpi = 300)
+
+plot_mid_2016<-ggplot(winrate_mid_2016_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_mid_2016_caly$Pickrate[match(x, winrate_mid_2016_caly$Champ)]*100, 2), ")"))
+ggsave("plot_mid_2016.png", plot = plot_mid_2016, width = 25, height = 10, dpi = 300)
+
+plot_adc_2016<-ggplot(winrate_adc_2016_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_adc_2016_caly$Pickrate[match(x, winrate_adc_2016_caly$Champ)]*100, 2), ")"))
+ggsave("plot_adc_2016.png", plot = plot_adc_2016, width = 25, height = 10, dpi = 300)
+
+plot_support_2016<-ggplot(winrate_support_2016_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_support_2016_caly$Pickrate[match(x, winrate_support_2016_caly$Champ)]*100, 2), ")"))
+ggsave("plot_support_2016.png", plot = plot_support_2016, width = 25, height = 10, dpi = 300)
+```
+
+
+
+
+
+
+```{r}
+(winrate_blue_top_2017<-aggregate(bResult~blueTopChamp,Rok_2017,mean)) #winrate na odpowiednich liniach, z uwzględnieniem strony
+(winrate_red_top_2017<-aggregate(rResult~redTopChamp,Rok_2017,mean))
+colnames(winrate_blue_top_2017)<-c("Champ","bResult")
+colnames(winrate_red_top_2017)<-c("Champ","rResult")
+
+(winrate_blue_jungle_2017<-aggregate(bResult~blueJungleChamp,Rok_2017,mean))
+(winrate_red_jungle_2017<-aggregate(rResult~redJungleChamp,Rok_2017,mean))
+colnames(winrate_blue_jungle_2017)<-c("Champ","bResult")
+colnames(winrate_red_jungle_2017)<-c("Champ","rResult")
+
+(winrate_blue_mid_2017<-aggregate(bResult~blueMiddleChamp,Rok_2017,mean))
+(winrate_red_mid_2017<-aggregate(rResult~redMiddleChamp,Rok_2017,mean))
+colnames(winrate_blue_mid_2017)<-c("Champ","bResult")
+colnames(winrate_red_mid_2017)<-c("Champ","rResult")
+
+(winrate_blue_adc_2017<-aggregate(bResult~blueADCChamp,Rok_2017,mean))
+(winrate_red_adc_2017<-aggregate(rResult~redADCChamp,Rok_2017,mean))
+colnames(winrate_blue_adc_2017)<-c("Champ","bResult")
+colnames(winrate_red_adc_2017)<-c("Champ","rResult")
+
+(winrate_blue_support_2017<-aggregate(bResult~blueSupportChamp,Rok_2017,mean))
+(winrate_red_support_2017<-aggregate(rResult~redSupportChamp,Rok_2017,mean))
+colnames(winrate_blue_support_2017)<-c("Champ","bResult")
+colnames(winrate_red_support_2017)<-c("Champ","rResult")
+
+
+(x1<-(subset(Rok_2017, select=c(bResult,blueTopChamp)))) #wyciągniecie danych i sklejenie ich jedna pod drugą, by uzyskać winrate bez uwzględnienia strony 
+colnames(x1)<-c("Result","Champ")
+y1<-(subset(Rok_2017, select=c(rResult,redTopChamp)))
+colnames(y1)<-c("Result","Champ")
+winrate_top_2017_podstawowy<-rbind(x1,y1)
+winrate_top_2017<-aggregate(Result~Champ,winrate_top_2017_podstawowy,mean)
+
+x2<-(subset(Rok_2017, select=c(bResult,blueJungleChamp)))
+colnames(x2)<-c("Result","Champ")
+y2<-(subset(Rok_2017, select=c(rResult,redJungleChamp)))
+colnames(y2)<-c("Result","Champ")
+winrate_jungle_2017_podstawowy<-rbind(x2,y2)
+winrate_jungle_2017<-aggregate(Result~Champ,winrate_jungle_2017_podstawowy,mean)
+
+x3<-(subset(Rok_2017, select=c(bResult,blueMiddleChamp)))
+colnames(x3)<-c("Result","Champ")
+y3<-(subset(Rok_2017, select=c(rResult,redMiddleChamp)))
+colnames(y3)<-c("Result","Champ")
+winrate_mid_2017_podstawowy<-rbind(x3,y3)
+winrate_mid_2017<-aggregate(Result~Champ,winrate_mid_2017_podstawowy,mean)
+
+x4<-(subset(Rok_2017, select=c(bResult,blueADCChamp)))
+colnames(x4)<-c("Result","Champ")
+y4<-(subset(Rok_2017, select=c(rResult,redADCChamp)))
+colnames(y4)<-c("Result","Champ")
+winrate_adc_2017_podstawowy<-rbind(x4,y4)
+winrate_adc_2017<-aggregate(Result~Champ,winrate_adc_2017_podstawowy,mean)
+
+x5<-(subset(Rok_2017, select=c(bResult,blueSupportChamp)))
+colnames(x5)<-c("Result","Champ")
+y5<-(subset(Rok_2017, select=c(rResult,redSupportChamp)))
+colnames(y5)<-c("Result","Champ")
+winrate_support_2017_podstawowy<-rbind(x5,y5)
+winrate_support_2017<-aggregate(Result~Champ,winrate_support_2017_podstawowy,mean)
+
+
+pickrate_top_2017_podstawowy<-winrate_top_2017_podstawowy 
+pickrate_jungle_2017_podstawowy<-winrate_jungle_2017_podstawowy
+pickrate_mid_2017_podstawowy<-winrate_mid_2017_podstawowy
+pickrate_adc_2017_podstawowy<-winrate_adc_2017_podstawowy
+pickrate_support_2017_podstawowy<-winrate_support_2017_podstawowy
+
+pickrate_top_2017_podstawowy$Result<-1
+pickrate_jungle_2017_podstawowy$Result<-1
+pickrate_mid_2017_podstawowy$Result<-1
+pickrate_adc_2017_podstawowy$Result<-1
+pickrate_support_2017_podstawowy$Result<-1
+
+(pickrate_top_2017<-aggregate(Result~Champ,pickrate_top_2017_podstawowy,sum)) #sprawdzenie ile razy dana postać była wybrana
+(pickrate_top_2017$Result<-as.numeric(as.character(pickrate_top_2017$Result))/nrow(Rok_2017)) #podzielenie przez liczbę gier w tym sezonie - pickrate
+colnames(pickrate_top_2017)<-c("Champ","Pickrate")
+
+(pickrate_jungle_2017<-aggregate(Result~Champ,pickrate_jungle_2017_podstawowy,sum))
+(pickrate_jungle_2017$Result<-as.numeric(as.character(pickrate_jungle_2017$Result))/nrow(Rok_2017))
+colnames(pickrate_jungle_2017)<-c("Champ","Pickrate")
+
+(pickrate_mid_2017<-aggregate(Result~Champ,pickrate_mid_2017_podstawowy,sum))
+(pickrate_mid_2017$Result<-as.numeric(as.character(pickrate_mid_2017$Result))/nrow(Rok_2017))
+colnames(pickrate_mid_2017)<-c("Champ","Pickrate")
+
+(pickrate_adc_2017<-aggregate(Result~Champ,pickrate_adc_2017_podstawowy,sum))
+(pickrate_adc_2017$Result<-as.numeric(as.character(pickrate_adc_2017$Result))/nrow(Rok_2017))
+colnames(pickrate_adc_2017)<-c("Champ","Pickrate")
+
+(pickrate_support_2017<-aggregate(Result~Champ,pickrate_support_2017_podstawowy,sum))
+(pickrate_support_2017$Result<-as.numeric(as.character(pickrate_support_2017$Result))/nrow(Rok_2017))
+colnames(pickrate_support_2017)<-c("Champ","Pickrate")
+
+
+winrate_top_2017_caly <- merge(x = winrate_top_2017, y = winrate_red_top_2017, by = "Champ", all = TRUE)
+winrate_top_2017_caly <- merge(x = winrate_top_2017_caly, y = winrate_blue_top_2017, by = "Champ", all = TRUE)
+winrate_top_2017_caly <- merge(x = winrate_top_2017_caly, y = pickrate_top_2017, by = "Champ", all = TRUE)
+
+winrate_top_2017_caly$Champ <- factor(winrate_top_2017_caly$Champ, levels = winrate_top_2017_caly$Champ[order(desc(winrate_top_2017_caly$Pickrate))])
+winrate_top_2017_caly <- winrate_top_2017_caly %>%
+  top_n(15, Pickrate)
+winrate_top_2017_caly_long <- tidyr::pivot_longer(winrate_top_2017_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_jungle_2017_caly <- merge(x = winrate_jungle_2017, y = winrate_red_jungle_2017, by = "Champ", all = TRUE)
+winrate_jungle_2017_caly <- merge(x = winrate_jungle_2017_caly, y = winrate_blue_jungle_2017, by = "Champ", all = TRUE)
+winrate_jungle_2017_caly <- merge(x = winrate_jungle_2017_caly, y = pickrate_jungle_2017, by = "Champ", all = TRUE)
+
+winrate_jungle_2017_caly$Champ <- factor(winrate_jungle_2017_caly$Champ, levels = winrate_jungle_2017_caly$Champ[order(desc(winrate_jungle_2017_caly$Pickrate))])
+winrate_jungle_2017_caly <- winrate_jungle_2017_caly %>%
+  top_n(15, Pickrate)
+winrate_jungle_2017_caly_long <- tidyr::pivot_longer(winrate_jungle_2017_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_mid_2017_caly <- merge(x = winrate_mid_2017, y = winrate_red_mid_2017, by = "Champ", all = TRUE)
+winrate_mid_2017_caly <- merge(x = winrate_mid_2017_caly, y = winrate_blue_mid_2017, by = "Champ", all = TRUE)
+winrate_mid_2017_caly <- merge(x = winrate_mid_2017_caly, y = pickrate_mid_2017, by = "Champ", all = TRUE)
+
+winrate_mid_2017_caly$Champ <- factor(winrate_mid_2017_caly$Champ, levels = winrate_mid_2017_caly$Champ[order(desc(winrate_mid_2017_caly$Pickrate))])
+winrate_mid_2017_caly <- winrate_mid_2017_caly %>%
+  top_n(15, Pickrate)
+winrate_mid_2017_caly_long <- tidyr::pivot_longer(winrate_mid_2017_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_adc_2017_caly <- merge(x = winrate_adc_2017, y = winrate_red_adc_2017, by = "Champ", all = TRUE)
+winrate_adc_2017_caly <- merge(x = winrate_adc_2017_caly, y = winrate_blue_adc_2017, by = "Champ", all = TRUE)
+winrate_adc_2017_caly <- merge(x = winrate_adc_2017_caly, y = pickrate_adc_2017, by = "Champ", all = TRUE)
+
+winrate_adc_2017_caly$Champ <- factor(winrate_adc_2017_caly$Champ, levels = winrate_adc_2017_caly$Champ[order(desc(winrate_adc_2017_caly$Pickrate))])
+winrate_adc_2017_caly <- winrate_adc_2017_caly %>%
+  top_n(15, Pickrate)
+winrate_adc_2017_caly_long <- tidyr::pivot_longer(winrate_adc_2017_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_support_2017_caly <- merge(x = winrate_support_2017, y = winrate_red_support_2017, by = "Champ", all = TRUE)
+winrate_support_2017_caly <- merge(x = winrate_support_2017_caly, y = winrate_blue_support_2017, by = "Champ", all = TRUE)
+winrate_support_2017_caly <- merge(x = winrate_support_2017_caly, y = pickrate_support_2017, by = "Champ", all = TRUE)
+
+winrate_support_2017_caly$Champ <- factor(winrate_support_2017_caly$Champ, levels = winrate_support_2017_caly$Champ[order(desc(winrate_support_2017_caly$Pickrate))])
+winrate_support_2017_caly <- winrate_support_2017_caly %>%
+  top_n(15, Pickrate)
+winrate_support_2017_caly_long <- tidyr::pivot_longer(winrate_support_2017_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+```
+
+```{r fig.align="center", echo = FALSE,fig.width = 20}
+plot_top_2017<-ggplot(winrate_top_2017_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_top_2017_caly$Pickrate[match(x, winrate_top_2017_caly$Champ)]*100, 2), ")"))
+ggsave("plot_top_2017.png", plot = plot_top_2017, width = 25, height = 10, dpi = 300)
+
+plot_jungle_2017<-ggplot(winrate_jungle_2017_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_jungle_2017_caly$Pickrate[match(x, winrate_jungle_2017_caly$Champ)]*100, 2), ")"))
+ggsave("plot_jungle_2017.png", plot = plot_jungle_2017, width = 25, height = 10, dpi = 300)
+
+plot_mid_2017<-ggplot(winrate_mid_2017_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_mid_2017_caly$Pickrate[match(x, winrate_mid_2017_caly$Champ)]*100, 2), ")"))
+ggsave("plot_mid_2017.png", plot = plot_mid_2017, width = 25, height = 10, dpi = 300)
+
+plot_adc_2017<-ggplot(winrate_adc_2017_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_adc_2017_caly$Pickrate[match(x, winrate_adc_2017_caly$Champ)]*100, 2), ")"))
+ggsave("plot_adc_2017.png", plot = plot_adc_2017, width = 25, height = 10, dpi = 300)
+
+plot_support_2017<-ggplot(winrate_support_2017_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_support_2017_caly$Pickrate[match(x, winrate_support_2017_caly$Champ)]*100, 2), ")"))
+ggsave("plot_support_2017.png", plot = plot_support_2017, width = 25, height = 10, dpi = 300)
+```
+
+
+
+
+
+
+
+
+
+```{r}
+(winrate_blue_top_2018<-aggregate(bResult~blueTopChamp,Rok_2018,mean)) #winrate na odpowiednich liniach, z uwzględnieniem strony
+(winrate_red_top_2018<-aggregate(rResult~redTopChamp,Rok_2018,mean))
+colnames(winrate_blue_top_2018)<-c("Champ","bResult")
+colnames(winrate_red_top_2018)<-c("Champ","rResult")
+
+(winrate_blue_jungle_2018<-aggregate(bResult~blueJungleChamp,Rok_2018,mean))
+(winrate_red_jungle_2018<-aggregate(rResult~redJungleChamp,Rok_2018,mean))
+colnames(winrate_blue_jungle_2018)<-c("Champ","bResult")
+colnames(winrate_red_jungle_2018)<-c("Champ","rResult")
+
+(winrate_blue_mid_2018<-aggregate(bResult~blueMiddleChamp,Rok_2018,mean))
+(winrate_red_mid_2018<-aggregate(rResult~redMiddleChamp,Rok_2018,mean))
+colnames(winrate_blue_mid_2018)<-c("Champ","bResult")
+colnames(winrate_red_mid_2018)<-c("Champ","rResult")
+
+(winrate_blue_adc_2018<-aggregate(bResult~blueADCChamp,Rok_2018,mean))
+(winrate_red_adc_2018<-aggregate(rResult~redADCChamp,Rok_2018,mean))
+colnames(winrate_blue_adc_2018)<-c("Champ","bResult")
+colnames(winrate_red_adc_2018)<-c("Champ","rResult")
+
+(winrate_blue_support_2018<-aggregate(bResult~blueSupportChamp,Rok_2018,mean))
+(winrate_red_support_2018<-aggregate(rResult~redSupportChamp,Rok_2018,mean))
+colnames(winrate_blue_support_2018)<-c("Champ","bResult")
+colnames(winrate_red_support_2018)<-c("Champ","rResult")
+
+
+(x1<-(subset(Rok_2018, select=c(bResult,blueTopChamp)))) #wyciągniecie danych i sklejenie ich jedna pod drugą, by uzyskać winrate bez uwzględnienia strony 
+colnames(x1)<-c("Result","Champ")
+y1<-(subset(Rok_2018, select=c(rResult,redTopChamp)))
+colnames(y1)<-c("Result","Champ")
+winrate_top_2018_podstawowy<-rbind(x1,y1)
+winrate_top_2018<-aggregate(Result~Champ,winrate_top_2018_podstawowy,mean)
+
+x2<-(subset(Rok_2018, select=c(bResult,blueJungleChamp)))
+colnames(x2)<-c("Result","Champ")
+y2<-(subset(Rok_2018, select=c(rResult,redJungleChamp)))
+colnames(y2)<-c("Result","Champ")
+winrate_jungle_2018_podstawowy<-rbind(x2,y2)
+winrate_jungle_2018<-aggregate(Result~Champ,winrate_jungle_2018_podstawowy,mean)
+
+x3<-(subset(Rok_2018, select=c(bResult,blueMiddleChamp)))
+colnames(x3)<-c("Result","Champ")
+y3<-(subset(Rok_2018, select=c(rResult,redMiddleChamp)))
+colnames(y3)<-c("Result","Champ")
+winrate_mid_2018_podstawowy<-rbind(x3,y3)
+winrate_mid_2018<-aggregate(Result~Champ,winrate_mid_2018_podstawowy,mean)
+
+x4<-(subset(Rok_2018, select=c(bResult,blueADCChamp)))
+colnames(x4)<-c("Result","Champ")
+y4<-(subset(Rok_2018, select=c(rResult,redADCChamp)))
+colnames(y4)<-c("Result","Champ")
+winrate_adc_2018_podstawowy<-rbind(x4,y4)
+winrate_adc_2018<-aggregate(Result~Champ,winrate_adc_2018_podstawowy,mean)
+
+x5<-(subset(Rok_2018, select=c(bResult,blueSupportChamp)))
+colnames(x5)<-c("Result","Champ")
+y5<-(subset(Rok_2018, select=c(rResult,redSupportChamp)))
+colnames(y5)<-c("Result","Champ")
+winrate_support_2018_podstawowy<-rbind(x5,y5)
+winrate_support_2018<-aggregate(Result~Champ,winrate_support_2018_podstawowy,mean)
+
+
+pickrate_top_2018_podstawowy<-winrate_top_2018_podstawowy 
+pickrate_jungle_2018_podstawowy<-winrate_jungle_2018_podstawowy
+pickrate_mid_2018_podstawowy<-winrate_mid_2018_podstawowy
+pickrate_adc_2018_podstawowy<-winrate_adc_2018_podstawowy
+pickrate_support_2018_podstawowy<-winrate_support_2018_podstawowy
+
+pickrate_top_2018_podstawowy$Result<-1
+pickrate_jungle_2018_podstawowy$Result<-1
+pickrate_mid_2018_podstawowy$Result<-1
+pickrate_adc_2018_podstawowy$Result<-1
+pickrate_support_2018_podstawowy$Result<-1
+
+(pickrate_top_2018<-aggregate(Result~Champ,pickrate_top_2018_podstawowy,sum)) #sprawdzenie ile razy dana postać była wybrana
+(pickrate_top_2018$Result<-as.numeric(as.character(pickrate_top_2018$Result))/nrow(Rok_2018)) #podzielenie przez liczbę gier w tym sezonie - pickrate
+colnames(pickrate_top_2018)<-c("Champ","Pickrate")
+
+(pickrate_jungle_2018<-aggregate(Result~Champ,pickrate_jungle_2018_podstawowy,sum))
+(pickrate_jungle_2018$Result<-as.numeric(as.character(pickrate_jungle_2018$Result))/nrow(Rok_2018))
+colnames(pickrate_jungle_2018)<-c("Champ","Pickrate")
+
+(pickrate_mid_2018<-aggregate(Result~Champ,pickrate_mid_2018_podstawowy,sum))
+(pickrate_mid_2018$Result<-as.numeric(as.character(pickrate_mid_2018$Result))/nrow(Rok_2018))
+colnames(pickrate_mid_2018)<-c("Champ","Pickrate")
+
+(pickrate_adc_2018<-aggregate(Result~Champ,pickrate_adc_2018_podstawowy,sum))
+(pickrate_adc_2018$Result<-as.numeric(as.character(pickrate_adc_2018$Result))/nrow(Rok_2018))
+colnames(pickrate_adc_2018)<-c("Champ","Pickrate")
+
+(pickrate_support_2018<-aggregate(Result~Champ,pickrate_support_2018_podstawowy,sum))
+(pickrate_support_2018$Result<-as.numeric(as.character(pickrate_support_2018$Result))/nrow(Rok_2018))
+colnames(pickrate_support_2018)<-c("Champ","Pickrate")
+
+
+winrate_top_2018_caly <- merge(x = winrate_top_2018, y = winrate_red_top_2018, by = "Champ", all = TRUE)
+winrate_top_2018_caly <- merge(x = winrate_top_2018_caly, y = winrate_blue_top_2018, by = "Champ", all = TRUE)
+winrate_top_2018_caly <- merge(x = winrate_top_2018_caly, y = pickrate_top_2018, by = "Champ", all = TRUE)
+
+winrate_top_2018_caly$Champ <- factor(winrate_top_2018_caly$Champ, levels = winrate_top_2018_caly$Champ[order(desc(winrate_top_2018_caly$Pickrate))])
+winrate_top_2018_caly <- winrate_top_2018_caly %>%
+  top_n(15, Pickrate)
+winrate_top_2018_caly_long <- tidyr::pivot_longer(winrate_top_2018_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_jungle_2018_caly <- merge(x = winrate_jungle_2018, y = winrate_red_jungle_2018, by = "Champ", all = TRUE)
+winrate_jungle_2018_caly <- merge(x = winrate_jungle_2018_caly, y = winrate_blue_jungle_2018, by = "Champ", all = TRUE)
+winrate_jungle_2018_caly <- merge(x = winrate_jungle_2018_caly, y = pickrate_jungle_2018, by = "Champ", all = TRUE)
+
+winrate_jungle_2018_caly$Champ <- factor(winrate_jungle_2018_caly$Champ, levels = winrate_jungle_2018_caly$Champ[order(desc(winrate_jungle_2018_caly$Pickrate))])
+winrate_jungle_2018_caly <- winrate_jungle_2018_caly %>%
+  top_n(15, Pickrate)
+winrate_jungle_2018_caly_long <- tidyr::pivot_longer(winrate_jungle_2018_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_mid_2018_caly <- merge(x = winrate_mid_2018, y = winrate_red_mid_2018, by = "Champ", all = TRUE)
+winrate_mid_2018_caly <- merge(x = winrate_mid_2018_caly, y = winrate_blue_mid_2018, by = "Champ", all = TRUE)
+winrate_mid_2018_caly <- merge(x = winrate_mid_2018_caly, y = pickrate_mid_2018, by = "Champ", all = TRUE)
+
+winrate_mid_2018_caly$Champ <- factor(winrate_mid_2018_caly$Champ, levels = winrate_mid_2018_caly$Champ[order(desc(winrate_mid_2018_caly$Pickrate))])
+winrate_mid_2018_caly <- winrate_mid_2018_caly %>%
+  top_n(15, Pickrate)
+winrate_mid_2018_caly_long <- tidyr::pivot_longer(winrate_mid_2018_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_adc_2018_caly <- merge(x = winrate_adc_2018, y = winrate_red_adc_2018, by = "Champ", all = TRUE)
+winrate_adc_2018_caly <- merge(x = winrate_adc_2018_caly, y = winrate_blue_adc_2018, by = "Champ", all = TRUE)
+winrate_adc_2018_caly <- merge(x = winrate_adc_2018_caly, y = pickrate_adc_2018, by = "Champ", all = TRUE)
+
+winrate_adc_2018_caly$Champ <- factor(winrate_adc_2018_caly$Champ, levels = winrate_adc_2018_caly$Champ[order(desc(winrate_adc_2018_caly$Pickrate))])
+winrate_adc_2018_caly <- winrate_adc_2018_caly %>%
+  top_n(15, Pickrate)
+winrate_adc_2018_caly_long <- tidyr::pivot_longer(winrate_adc_2018_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+
+winrate_support_2018_caly <- merge(x = winrate_support_2018, y = winrate_red_support_2018, by = "Champ", all = TRUE)
+winrate_support_2018_caly <- merge(x = winrate_support_2018_caly, y = winrate_blue_support_2018, by = "Champ", all = TRUE)
+winrate_support_2018_caly <- merge(x = winrate_support_2018_caly, y = pickrate_support_2018, by = "Champ", all = TRUE)
+
+winrate_support_2018_caly$Champ <- factor(winrate_support_2018_caly$Champ, levels = winrate_support_2018_caly$Champ[order(desc(winrate_support_2018_caly$Pickrate))])
+winrate_support_2018_caly <- winrate_support_2018_caly %>%
+  top_n(15, Pickrate)
+winrate_support_2018_caly_long <- tidyr::pivot_longer(winrate_support_2018_caly, cols = c(Result, rResult, bResult), names_to = "Metric", values_to = "Value")
+```
+
+```{r fig.align="center", echo = FALSE,fig.width = 20}
+plot_top_2018<-ggplot(winrate_top_2018_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_top_2018_caly$Pickrate[match(x, winrate_top_2018_caly$Champ)]*100, 2), ")"))
+ggsave("plot_top_2018.png", plot = plot_top_2018, width = 25, height = 10, dpi = 300)
+
+plot_jungle_2018<-ggplot(winrate_jungle_2018_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_jungle_2018_caly$Pickrate[match(x, winrate_jungle_2018_caly$Champ)]*100, 2), ")"))
+ggsave("plot_jungle_2018.png", plot = plot_jungle_2018, width = 25, height = 10, dpi = 300)
+
+plot_mid_2018<-ggplot(winrate_mid_2018_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_mid_2018_caly$Pickrate[match(x, winrate_mid_2018_caly$Champ)]*100, 2), ")"))
+ggsave("plot_mid_2018.png", plot = plot_mid_2018, width = 25, height = 10, dpi = 300)
+
+plot_adc_2018<-ggplot(winrate_adc_2018_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_adc_2018_caly$Pickrate[match(x, winrate_adc_2018_caly$Champ)]*100, 2), ")"))
+ggsave("plot_adc_2018.png", plot = plot_adc_2018, width = 25, height = 10, dpi = 300)
+
+plot_support_2018<-ggplot(winrate_support_2018_caly_long, aes(x = Champ, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Champ (Pickrate %)", y = "Value") +
+  scale_fill_manual(values = c("Result" = "black", "rResult" = "red", "bResult" = "blue"))+
+  theme_modern_rc()+
+  scale_x_discrete(labels = function(x) paste0(x, " (", round(winrate_support_2018_caly$Pickrate[match(x, winrate_support_2018_caly$Champ)]*100, 2), ")"))
+ggsave("plot_support_2018.png", plot = plot_support_2018, width = 25, height = 10, dpi = 300)
+```
